@@ -447,7 +447,23 @@ Now that your system is running, the most crucial next step is to establish a "f
 
 Start by installing an editor like VSCode and adding one of the excellent Nix language extensions available. The benefits of syntax highlighting, autocompletion, and error checking will dramatically improve your configuration workflow.
 
-Once you are set up, open your configuration's entry point, `~/flakes/flake.nix`, in your IDE. You will see that your entire system is composed of a collection of `modules`, just like this:
+Once you are set up, open your configuration's entry point, `~/flakes/flake.nix`, in your IDE. 
+
+```
+/home/USER/flakes/
+├── flake.nix
+└── sub
+    ├── boot.nix
+    ├── gnome-desktop.nix
+    ├── hardware-configuration.nix
+    ├── home.nix
+    ├── key-remap.nix
+    ├── system-packages.nix
+    ├── system-settings.nix
+    └── user.nix
+```
+
+You will see that your entire system is composed of a collection of `modules`, just like this:
 
 ```nix
       modules = [
