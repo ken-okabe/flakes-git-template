@@ -35,7 +35,7 @@ This guide details a modern, reproducible method for installing NixOS using Flak
 
 First, generate your own configuration repository from a template.
 
-1.  Go to **[https://github.com/ken-okabe/flakes-git-template](https://www.google.com/search?q=https://github.com/ken-okabe/flakes-git-template)**
+1.  Go to **https://github.com/ken-okabe/flakes-git-template**
     
 2.  Click "Use this template" -> "Create a new repository" to create your own copy, which will be at:
     
@@ -88,7 +88,7 @@ sudo mount /dev/nvme0n1p1 /mnt/boot
 sudo swapon /dev/nvme0n1p3
 ```
 
-## 2.3. Clone and Configure Your Flake
+## 2.3. Clone Your Flakes from the GitHub Repository
 
 Create the necessary directories on the target disk and clone your repository. Replace `USER` and `GITHUB_USER_NAME` with your own details.
 
@@ -160,53 +160,17 @@ cd /mnt/home/USER
 sudo git clone https://github.com/GITHUB_USER_NAME/flakes-git
 ```
 
-At this point, your user's home directory on the target disk contains two directories: the empty `flakes` directory (which will be our build directory) and `flakes-git` (which holds the version-controlled configuration). The structure is as follows:
+## 2.4. Prepare the Build Directory
+
+At this point, your user's home directory on the target disk contains the following structure:
 
 ```
 /mnt/home/USER/
-├── flakes/
-└── flakes-git/
+├── flakes/          # Build directory (will be created)
+└── flakes-git/      # Version-controlled repository (cloned)
 ```
 
-Next, edit your core configuration file inside the `flakes-git` directory.
-
-```sh
-sudo nano /mnt/home/USER/flakes-git/flake.nix
-```
-
-Modify the `let` block with your personal settings.
-
-```nix
-let
-  # --- System Hostname ---
-  hostname = "nixos"; # e.g. "my-laptop"
-
-  # --- System Architecture ---
-  system = "x86_64-linux";
-
-  # --- NixOS Version ---
-  stateVersion = "25.05";
-
-  # --- User Information ---
-  username = "USER"; # Your desired username
-  passwordHash = "PASSWORD_HASH"; # Your generated password hash
-
-  # --- Git Information ---
-  gitUsername = "Your Git Name";
-  gitUseremail = "your.email@example.com";
-```
-
-To generate the `PASSWORD_HASH`, open a new terminal and run this one-liner. It asks for a password twice and only outputs the hash if they match.
-
-```sh
-echo -n "Password: "; read -s pass1; echo; echo -n "Confirm: "; read -s pass2; echo; [ "$pass1" = "$pass2" ] && echo "$pass1" | mkpasswd -m sha-512 -s || echo "Passwords do not match"
-```
-
-Copy the resulting hash string (it starts with `$6$`) and paste it into `flake.nix`.
-
-## 2.4. Prepare the Build Directory
-
-Copy only the essential Nix files from your cloned git repository to your build directory.
+Now, copy only the essential Nix files from your cloned git repository to your build directory.
 
 ```sh
 sudo rsync -av --exclude '.*' --exclude 'README.md' /mnt/home/USER/flakes-git/ /mnt/home/USER/flakes/
@@ -230,12 +194,77 @@ sudo rsync -av --exclude '.*' --exclude 'README.md' /mnt/home/USER/flakes-git/ /
     ```
     /mnt/home/USER/flakes/
     ├── flake.nix
-    └── sub/
+    └── sub/ 
     ```
 
 This separation prevents Nix from processing unintended files from your Git history and documentation, making the build environment cleaner and more predictable.
 
-## 2.5. Generate Hardware Configuration
+## 2.5. Configure Your Build Directory
+
+Now, edit your core configuration file inside the **build directory** (`flakes`), **not** the Git repository directory.
+
+```sh
+sudo nano /mnt/home/USER/flakes/flake.nix
+```
+
+**Important Security Note:** We edit the configuration in the build directory (`~/flakes`) rather than the Git repository directory (`~/flakes-git`) to avoid accidentally committing sensitive information like password hashes to version control.
+
+### Configuration Based on Installation Type
+
+The configuration process depends on whether this is your first installation or a subsequent one:
+
+**A) First Installation from Template:** If this is your first time using the template, all user information will be placeholder values. You need to configure everything:
+
+```nix
+let
+  # --- System Hostname ---
+  hostname = "nixos"; # e.g. "my-laptop"
+
+  # --- System Architecture ---
+  system = "x86_64-linux";
+
+  # --- NixOS Version ---
+  stateVersion = "25.05";
+
+  # --- User Information ---
+  username = "USER"; # Your desired username
+  passwordHash = "PASSWORD_HASH"; # Your generated password hash
+
+  # --- Git Information ---
+  gitUsername = "Your Git Name";
+  gitUseremail = "your.email@example.com";
+```
+
+**B) Subsequent Installation (Inheriting Previous Configuration):**
+
+If you've previously customized your repository, most settings will already be configured. The only potential action required is to handle the password hash.
+
+You should check its status:
+
+-   If a valid hash has been inherited from the previous setup, no further action is needed.
+    
+-   However, if it remains as a placeholder, you must set a new password hash at this stage.
+
+```nix
+let
+  # Most settings inherited from previous configuration
+  # Only update what's necessary:
+  passwordHash = "PASSWORD_HASH"; # Generate new hash for this installation
+```
+
+### Generating Your Password Hash
+
+To generate the `PASSWORD_HASH`, open a new terminal and run this one-liner. It asks for a password twice and only outputs the hash if they match.
+
+```sh
+echo -n "Password: "; read -s pass1; echo; echo -n "Confirm: "; read -s pass2; echo; [ "$pass1" = "$pass2" ] && echo "$pass1" | mkpasswd -m sha-512 -s || echo "Passwords do not match"
+```
+
+Copy the resulting hash string (it starts with `$6$`) and paste it into the `passwordHash` field in `/mnt/home/USER/flakes/flake.nix`.
+
+**Security Reminder:** The password hash is now only stored in your build directory (`~/flakes`), keeping your Git repository (`~/flakes-git`) clean and secure with dummy values.
+
+## 2.6. Generate Hardware Configuration
 
 Generate a hardware-specific configuration file for your machine and place it inside your flake's `sub` directory.
 
@@ -251,7 +280,7 @@ sudo rm /mnt/home/USER/flakes/sub/configuration.nix
 
 **Note on configuration.nix Removal:** Traditionally, NixOS systems are managed through `configuration.nix` as the primary configuration file. However, in a Flakes-based setup, keeping both `flake.nix` and `configuration.nix` is equivalent to having different versions of APIs coexisting in the same system—it creates nothing but confusion and potential conflicts. The two approaches represent fundamentally different configuration paradigms: the legacy imperative style versus the modern declarative Flakes approach. There is absolutely no benefit to retaining the auto-generated `configuration.nix` file, as all system configuration is now centrally managed through `flake.nix`. Removing it eliminates any ambiguity about which configuration system is authoritative and ensures a clean, single-source-of-truth architecture.
 
-## 2.6. Install NixOS
+## 2.7. Install NixOS
 
 You are now ready to install. Change into your flake's root directory and run the installer.
 
@@ -306,67 +335,83 @@ If the build succeeds, the changes are applied immediately. If it fails, your sy
 
 3. Persist Changes to `flakes-git`
 
-Once you are happy with a successful change, sync it from your working directory (`~/flakes`) to your Git directory (`~/flakes-git`). This is done with a safe, targeted one-liner command.
+Once you are happy with a successful change, sync it from your working directory (`~/flakes`) to your Git directory (`~/flakes-git`). **The method depends on your repository privacy settings:**
+
+### A) Private Repository (Recommended Simple Workflow)
+
+If your GitHub repository is private, you can safely sync everything as-is, including the actual password hash:
 
 ```sh
-# Sync changes with the safe, targeted one-liner command
+# Simple sync - keeps actual password hash
 rsync -av --delete ~/flakes/sub/ ~/flakes-git/sub/ && rsync -av ~/flakes/flake.nix ~/flakes-git/flake.nix
 ```
 
+**Benefits:**
+
+- **Simple workflow**: No extra steps needed
+- **Seamless inheritance**: Next installation automatically inherits your password
+- **Repository safety**: Private repos protect sensitive information
+
+### B) Public Repository or Extra Security (Advanced Workflow)
+
+If your repository is public or you want extra security even with private repos, use the password hash protection workflow:
+
+```sh
+# First, backup your current password hash
+CURRENT_HASH=$(grep 'passwordHash = ' ~/flakes/flake.nix | sed 's/.*passwordHash = "\([^"]*\)".*/\1/')
+
+# Replace password hash with dummy in your build directory
+sed -i 's/passwordHash = "\$6\$.*";/passwordHash = "DUMMY_HASH_REPLACE_DURING_INSTALL";/' ~/flakes/flake.nix
+
+# Sync changes with the safe, targeted one-liner command
+rsync -av --delete ~/flakes/sub/ ~/flakes-git/sub/ && rsync -av ~/flakes/flake.nix ~/flakes-git/flake.nix
+
+# Restore the actual password hash in your build directory
+sed -i "s/passwordHash = \"DUMMY_HASH_REPLACE_DURING_INSTALL\";/passwordHash = \"$CURRENT_HASH\";/" ~/flakes/flake.nix
+```
+
+**Benefits:**
+
+- **Repository safety**: Git never contains actual password hashes
+- **Build directory integrity**: Your `~/flakes` remains functional
+- **Public sharing**: Safe for public repositories
+
 ### Command Rationale and Validity
 
-This one-liner combines two `rsync` commands with `&&` to safely and accurately synchronize your configuration for daily use.
+Both workflows use the same core synchronization approach:
 
-1.  **`rsync -av --delete ~/flakes/sub/ ~/flakes-git/sub/`**
-    
-    -   **What it does**: This first command mirrors the `sub` directory, where your Nix modules are stored. The `-av` options ensure efficient file transfer, and the `--delete` option removes any files from the destination (`~/flakes-git/sub/`) that no longer exist in the source (`~/flakes/sub/`).
-        
-    -   **Why it's valid**: By limiting the scope of this operation to the `sub` directory, there is no risk of accidentally deleting repository-level files like `.git` or `README.md`. It allows you to safely propagate file deletions from your configuration to your repository.
-        
-2.  **`&&`**
-    
-    -   **What it does**: This operator ensures that the command on its right only executes if the command on its left succeeds.
-        
-    -   **Why it's valid**: If an error occurs during the `sub` directory synchronization, the subsequent command will not run. This prevents a chain of operations from proceeding incorrectly and enhances the reliability of the workflow.
-        
-3.  **`rsync -av ~/flakes/flake.nix ~/flakes-git/flake.nix`**
-    
-    -   **What it does**: This second command copies and overwrites the top-level `flake.nix` file to its destination.
-        
-    -   **Why it's valid**: Since this targets a single file, the `--delete` option is not needed. By synchronizing the `sub` directory with the first command and `flake.nix` with this one, all configuration changes (additions, updates, and deletions) are fully and correctly reflected in the `flakes-git` directory.
-        
+1.  **`rsync -av --delete ~/flakes/sub/ ~/flakes-git/sub/`**: Mirrors the `sub` directory with proper deletion handling
+2.  **`&&`**: Ensures the second command only runs if the first succeeds  
+3.  **`rsync -av ~/flakes/flake.nix ~/flakes-git/flake.nix`**: Copies the main configuration file
+
+The difference is whether the password hash is temporarily replaced (Option B) or kept as-is (Option A).
 
 4. Commit and Push to GitHub Repository
 
-After safely synchronizing, commit the changes and push them to GitHub.
-
-Since your configuration contains a password hash, you need to be mindful of repository security:
-
-**Password Hash Security Management:**
-
-- **For Private Repositories**: If your GitHub repository is private, you can safely commit the password hash as-is. This allows seamless inheritance of your password during the next installation.
-
-- **For Public Repositories**: You must replace the password hash with a dummy string before committing. This is also an optional security practice even for private repositories.
-
-**Workflow Options:**
-
-- **Option A - Keep Password Hash (Private repos only)**: If you keep the actual password hash in your commits, it will be automatically inherited during future installations, eliminating the need to repeat the password hash generation process.
-
-- **Option B - Use Dummy Password Hash**: If you replace the password hash with a dummy string before committing, you'll need to repeat the password hash generation and configuration process during each new installation.
+After synchronizing, commit the changes and push them to GitHub:
 
 ```sh
-# Commit and push to your repository
 cd ~/flakes-git
-
-# Optional: Replace password hash with dummy if using public repo
-# sed -i 's/passwordHash = ".*";/passwordHash = "DUMMY_HASH_REPLACE_DURING_INSTALL";/' flake.nix
-
 git add -A -v
 git commit -m "feat: updated system configuration" # Or any descriptive message
 git push
 ```
 
-With this, the user information and all other settings you've configured are now permanently saved to your GitHub repository.
+## Workflow Summary
+
+**Choose your approach based on your needs:**
+
+- **Option A (Private Repository)**: Simple, straightforward workflow with password hash inheritance
+- **Option B (Public/Extra Security)**: More complex but provides additional security layers
+
+**The next time you install NixOS, the installation process will begin from this updated repository:**
+
+- **Option A**: Inherits your exact configuration including password
+- **Option B**: Inherits all configuration except password hash (requires regeneration during installation)
+
+Both approaches provide complete system reproducibility while accommodating different security requirements.
+
+After all, the user information and all other settings you've configured are now permanently saved to your GitHub repository.
 
 **The next time you install NixOS, for example on different hardware, the installation process will now begin from this updated repository. This allows you to reproduce and inherit the exact, most recent state of your NixOS system.**
 
