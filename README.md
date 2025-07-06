@@ -103,7 +103,6 @@ sudo mkdir -p /mnt/home/USER/flakes
 cd /mnt/home/USER
 # Replace TOKEN with your GitHub Personal Access Token
 sudo git clone https://GITHUB_USER_NAME:TOKEN@github.com/GITHUB_USER_NAME/flakes-git
-
 ```
 
 **Method 2: USB Transfer**
@@ -114,7 +113,6 @@ sudo git clone https://GITHUB_USER_NAME:TOKEN@github.com/GITHUB_USER_NAME/flakes
 sudo mkdir -p /mnt/home/USER/flakes
 cd /mnt/home/USER
 sudo cp -r /media/usb/flakes-git ./
-
 ```
 
 #### For Public Repositories:
@@ -123,7 +121,6 @@ sudo cp -r /media/usb/flakes-git ./
 sudo mkdir -p /mnt/home/USER/flakes
 cd /mnt/home/USER
 sudo git clone https://github.com/GITHUB_USER_NAME/flakes-git
-
 ```
 
 At this point, your user's home directory on the target disk contains two directories: the empty `flakes` directory (which will be our build directory) and `flakes-git` (which holds the version-controlled configuration). The structure is as follows:
@@ -138,7 +135,6 @@ Next, edit your core configuration file inside the `flakes-git` directory.
 
 ```sh
 sudo nano /mnt/home/USER/flakes-git/flake.nix
-
 ```
 
 Modify the `let` block with your personal settings.
@@ -161,14 +157,12 @@ let
   # --- Git Information ---
   gitUsername = "Your Git Name";
   gitUseremail = "your.email@example.com";
-
 ```
 
 To generate the `PASSWORD_HASH`, open a new terminal and run this one-liner. It asks for a password twice and only outputs the hash if they match.
 
 ```sh
 echo -n "Password: "; read -s pass1; echo; echo -n "Confirm: "; read -s pass2; echo; [ "$pass1" = "$pass2" ] && echo "$pass1" | mkpasswd -m sha-512 -s || echo "Passwords do not match"
-
 ```
 
 Copy the resulting hash string (it starts with `$6$`) and paste it into `flake.nix`.
