@@ -2,6 +2,33 @@
 
 This guide details a modern, reproducible method for installing NixOS using Flakes. The core philosophy is to use a personal GitHub repository as the "single source of truth" for your entire system configuration. This approach ensures that your system setup is version-controlled, easily shareable, and can be reliably reproduced on any hardware.
 
+## Key Advantages of This Approach
+
+### 🏗️ Architecture & Design
+
+- **Single Source of Truth**: Complete system state managed through GitHub repository
+- **Clean Directory Separation**: Working directory isolated from Git repository for optimal workflow
+- **Pure Configuration Paradigm**: Eliminates configuration.nix to prevent conflicting management approaches
+- **Clean Tree Structure**: `tree` command shows only Nix files, not Git's complex directory structure
+
+### 🔧 Development Experience
+
+- **Modern Editor Compatibility**: Full VSCode/IDE support through user-space configuration placement
+- **Minimal sudo Usage**: Daily workflow operates without elevated privileges
+- **One-Command Synchronization**: Complete configuration sync with single rsync command
+
+### 🔒 Security & Operations
+
+- **Dual Repository Strategy**: Supports both private repos (with password hash) and public repos (with dummy hash)
+- **Atomic Configuration**: System remains stable if build fails, with immediate testing capability
+- **Complete Reproducibility**: Identical environment deployment across different hardware
+
+### 🎯 Practical Benefits
+
+- **Seamless Inheritance**: New installations automatically inherit latest configuration
+- **Version-Controlled Infrastructure**: Full system history and rollback capabilities
+- **Long-term Maintainability**: Sustainable workflow for ongoing system evolution
+
 ## Part 1: Preparation
 
 ### 1.1. Create Your Flakes Repository
@@ -21,13 +48,6 @@ First, generate your own configuration repository from a template.
 3.  **Repository Privacy Settings**: Since your configuration will include a password hash string (not the password itself, of course), you should make this repository private. Alternatively, if you prefer a public repository, you can replace the password hash with a dummy string before each git commit (detailed in the workflow section below).
 
      ![image](https://raw.githubusercontent.com/ken-okabe/web-images5/main/img_1751777708137.png)
-
-
-
-
-
-
-
 
 ### 1.2. Prepare Live ISO Media
 
