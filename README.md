@@ -105,6 +105,43 @@ cd /mnt/home/USER
 sudo git clone https://GITHUB_USER_NAME:TOKEN@github.com/GITHUB_USER_NAME/flakes-git
 ```
 
+-----
+
+##### 🔑 Steps to Obtain a Token
+
+1.  **Sign in to GitHub**
+    First, sign in to your [GitHub](https://github.com/) account in your web browser.
+
+2.  **Navigate to Settings**
+    Click on your profile picture in the top-right corner, and select **[Settings]** from the dropdown menu.
+
+3.  **Go to Developer Settings**
+    In the left-hand menu, scroll all the way down and click on **[Developer settings]**.
+
+4.  **Select Personal access tokens**
+    Next, click on **[Personal access tokens]**, and then select **[Tokens (classic)]**.
+
+5.  **Generate a new token**
+    Click the **[Generate new token]** button, and from the menu that appears, choose **[Generate new token (classic)]**.
+
+6.  **Configure the token**
+
+      * **Note**: Give your token a descriptive name so you know what it's for (e.g., "flakes-clone-token").
+      * **Expiration**: Set an expiration date for the token. For security, it's recommended to choose a specific duration like 30 or 90 days instead of "No expiration."
+      * **Select scopes**: Choose the permissions for the token. To simply `git clone` a private repository as in your command, you only need to check the **`repo`** scope.
+
+7.  **Generate and copy the token**
+    Scroll to the bottom of the page and click the **[Generate token]** button.
+
+    Your new token (a string starting with `ghp_`) will be displayed. **This token will only be shown once.** Be sure to click the copy icon next to it and save it in a secure place. You will not be able to see it again after you leave the page.
+
+-----
+
+##### Important Notes ⚠️
+
+* **Treat your token like a password**. Never share it with anyone or commit it to a public repository.
+  * Paste the token you copied into the `TOKEN` placeholder in your command to run it successfully.
+
 **Method 2: USB Transfer**
 
 ```sh
