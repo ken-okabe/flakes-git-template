@@ -282,6 +282,20 @@ sudo rm /mnt/home/USER/flakes/sub/configuration.nix
 
 ## 2.7. Install NixOS
 
+```
+/mnt/home/USER/flakes/
+├── flake.nix
+└── sub
+    ├── boot.nix
+    ├── gnome-desktop.nix
+    ├── hardware-configuration.nix
+    ├── home.nix
+    ├── key-remap.nix
+    ├── system-packages.nix
+    ├── system-settings.nix
+    └── user.nix
+```
+
 You are now ready to install. Change into your flake's root directory and run the installer.
 
 ```sh
