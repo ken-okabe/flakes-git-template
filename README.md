@@ -29,9 +29,9 @@ This guide details a modern, reproducible method for installing NixOS using Flak
 - **Version-Controlled Infrastructure**: Full system history and rollback capabilities
 - **Long-term Maintainability**: Sustainable workflow for ongoing system evolution
 
-## Part 1: Preparation
+# Part 1: Preparation
 
-### 1.1. Create Your Flakes Repository
+## 1.1. Create Your Flakes Repository
 
 First, generate your own configuration repository from a template.
 
@@ -49,19 +49,19 @@ First, generate your own configuration repository from a template.
 
      ![image](https://raw.githubusercontent.com/ken-okabe/web-images5/main/img_1751777708137.png)
 
-### 1.2. Prepare Live ISO Media
+## 1.2. Prepare Live ISO Media
 
 Download the NixOS installer from the official website: **[https://nixos.org/download](https://nixos.org/download)**
 
 You can use either the **Graphical (GNOME) ISO** or the **Minimal ISO**. Since this guide does not use the graphical installer, either will work. However, the graphical version provides a full desktop environment, which is convenient for partitioning with GParted and setting up wireless networks.
 
-## Part 2: Installation Process
+# Part 2: Installation Process
 
-### 2.1. Boot from Live ISO
+## 2.1. Boot from Live ISO
 
 Boot your machine from the USB drive. Once on the desktop or command line, connect to the internet (and connect your Bluetooth keyboard, if needed).
 
-### 2.2. Disk Partitioning and Mounting
+## 2.2. Disk Partitioning and Mounting
 
 Use a partitioning tool like GParted (available in the graphical ISO) or command-line tools (`gdisk`, `fdisk`) to prepare your disk.
 
@@ -88,11 +88,11 @@ sudo mount /dev/nvme0n1p1 /mnt/boot
 sudo swapon /dev/nvme0n1p3
 ```
 
-### 2.3. Clone and Configure Your Flake
+## 2.3. Clone and Configure Your Flake
 
 Create the necessary directories on the target disk and clone your repository. Replace `USER` and `GITHUB_USER_NAME` with your own details.
 
-#### For Private Repositories:
+### For Private Repositories:
 
 Choose one of the following methods to access your private repository:
 
@@ -107,7 +107,7 @@ sudo git clone https://GITHUB_USER_NAME:TOKEN@github.com/GITHUB_USER_NAME/flakes
 
 -----
 
-##### 🔑 Steps to Obtain a Token
+#### 🔑 Steps to Obtain a Token
 
 1.  **Sign in to GitHub**
     First, sign in to your [GitHub](https://github.com/) account in your web browser.
@@ -137,7 +137,7 @@ sudo git clone https://GITHUB_USER_NAME:TOKEN@github.com/GITHUB_USER_NAME/flakes
 
 -----
 
-##### Important Notes ⚠️
+#### Important Notes ⚠️
 
 * **Treat your token like a password**. Never share it with anyone or commit it to a public repository.
   * Paste the token you copied into the `TOKEN` placeholder in your command to run it successfully.
@@ -152,7 +152,7 @@ cd /mnt/home/USER
 sudo cp -r /media/usb/flakes-git ./
 ```
 
-#### For Public Repositories:
+### For Public Repositories:
 
 ```sh
 sudo mkdir -p /mnt/home/USER/flakes
@@ -204,7 +204,7 @@ echo -n "Password: "; read -s pass1; echo; echo -n "Confirm: "; read -s pass2; e
 
 Copy the resulting hash string (it starts with `$6$`) and paste it into `flake.nix`.
 
-### 2.4. Prepare the Build Directory
+## 2.4. Prepare the Build Directory
 
 Copy only the essential Nix files from your cloned git repository to your build directory.
 
@@ -235,7 +235,7 @@ sudo rsync -av --exclude '.*' --exclude 'README.md' /mnt/home/USER/flakes-git/ /
 
 This separation prevents Nix from processing unintended files from your Git history and documentation, making the build environment cleaner and more predictable.
 
-### 2.5. Generate Hardware Configuration
+## 2.5. Generate Hardware Configuration
 
 Generate a hardware-specific configuration file for your machine and place it inside your flake's `sub` directory.
 
@@ -251,7 +251,7 @@ sudo rm /mnt/home/USER/flakes/sub/configuration.nix
 
 **Note on configuration.nix Removal:** Traditionally, NixOS systems are managed through `configuration.nix` as the primary configuration file. However, in a Flakes-based setup, keeping both `flake.nix` and `configuration.nix` is equivalent to having different versions of APIs coexisting in the same system—it creates nothing but confusion and potential conflicts. The two approaches represent fundamentally different configuration paradigms: the legacy imperative style versus the modern declarative Flakes approach. There is absolutely no benefit to retaining the auto-generated `configuration.nix` file, as all system configuration is now centrally managed through `flake.nix`. Removing it eliminates any ambiguity about which configuration system is authoritative and ensures a clean, single-source-of-truth architecture.
 
-### 2.6. Install NixOS
+## 2.6. Install NixOS
 
 You are now ready to install. Change into your flake's root directory and run the installer.
 
@@ -268,9 +268,9 @@ Once finished, reboot the system.
 sudo reboot
 ```
 
-## Part 3: Post-Installation and Workflow
+# Part 3: Post-Installation and Workflow
 
-### 3.1. First Boot and Ownership Fix
+## 3.1. First Boot and Ownership Fix
 
 After rebooting and logging in as your new user, the first thing you should do is manually verify and fix file ownership. This is a failsafe step to ensure you have full control over your configuration files.
 
@@ -279,7 +279,7 @@ sudo chown -R $USER:users /home/$USER/flakes
 sudo chown -R $USER:users /home/$USER/flakes-git
 ```
 
-### 3.2. The Daily Workflow
+## 3.2. The Daily Workflow
 
 **Your system is now managed entirely by the files in `~/flakes`.**
 
@@ -313,7 +313,7 @@ Once you are happy with a successful change, sync it from your working directory
 rsync -av --delete ~/flakes/sub/ ~/flakes-git/sub/ && rsync -av ~/flakes/flake.nix ~/flakes-git/flake.nix
 ```
 
-#### Command Rationale and Validity
+### Command Rationale and Validity
 
 This one-liner combines two `rsync` commands with `&&` to safely and accurately synchronize your configuration for daily use.
 
@@ -370,7 +370,7 @@ With this, the user information and all other settings you've configured are now
 
 **The next time you install NixOS, for example on different hardware, the installation process will now begin from this updated repository. This allows you to reproduce and inherit the exact, most recent state of your NixOS system.**
 
-## Why Use `~/flakes`? (A Comparison with the Default `/etc/nixos`)
+# Why Use `~/flakes`? (A Comparison with the Default `/etc/nixos`)
 
 ***Your system is now managed entirely by the files in ~/flakes.***
 
@@ -382,7 +382,7 @@ First, there is an issue with design philosophy. In any practical setup, `flake.
 
 Second, and most importantly, is the practical issue of permissions. Any file under the `/etc/nixos/` directory requires `sudo` privileges to edit. If the "only set of configuration files we ever need to touch" resides here, every single edit in our daily workflow would require `sudo`. While using `sudo nano` is fine for a single file, as we did during the initial installation, it becomes completely impractical when you need to frequently edit an entire directory of configuration files. The critical issue is that **modern editors like VSCode are, for security reasons, restricted from opening system-level directories that require root access.** This means `/etc/nixos/` is effectively unusable for editing in VSCode. This is a massive drawback. Therefore, to enable a sane and productive workflow, the Flakes configuration **must** reside in the user's home space (`/home/USER/`).
 
-## Next Step: Making the System Your Own
+# Next Step: Making the System Your Own
 
 Now that your system is running, the most crucial next step is to establish a "flawless development setup." As you have come to understand, managing NixOS is almost exclusively about editing configuration files. Therefore, your most powerful weapon will be a high-function IDE (Integrated Development Environment).
 
