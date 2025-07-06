@@ -31,6 +31,7 @@
     pulse.enable = true;
   };
   
+  programs.zsh.enable = true;  
 
   networking.firewall.enable = false;
 

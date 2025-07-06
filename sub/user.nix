@@ -9,8 +9,9 @@
   users.users.${specialArgs.username} = { # Use the passed nixosUsername argument
     isNormalUser = true;
     extraGroups = [ "wheel" ];
-    shell = pkgs.zsh;
     initialHashedPassword =  specialArgs.passwordHash; # Use the passed passwordHash argument
+  
+    shell = pkgs.zsh; # Set the default shell to Zsh
   };
 
   # Set the root user's password to be the same as the primary user's password.

@@ -1,5 +1,3 @@
- 
-
 # NixOS Installation: A GitHub-Centric Flakes Workflow
 
 This guide details a modern, reproducible method for installing NixOS using Flakes. The core philosophy is to use a personal GitHub repository as the "single source of truth" for your entire system configuration. This approach ensures that your system setup is version-controlled, easily shareable, and can be reliably reproduced on any hardware.
@@ -15,9 +13,21 @@ First, generate your own configuration repository from a template.
 2.  Click "Use this template" -> "Create a new repository" to create your own copy, which will be at:
     
     https://github.com/GITHUB_USER_NAME/flakes-git
-    
 
-_(Reference: [Creating a repository from a template](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template))_
+    _(Reference: [Creating a repository from a template](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template))_
+
+    ![image](https://raw.githubusercontent.com/ken-okabe/web-images5/main/img_1751777619728.png)
+
+3.  **Repository Privacy Settings**: Since your configuration will include a password hash string (not the password itself, of course), you should make this repository private. Alternatively, if you prefer a public repository, you can replace the password hash with a dummy string before each git commit (detailed in the workflow section below).
+
+     ![image](https://raw.githubusercontent.com/ken-okabe/web-images5/main/img_1751777708137.png)
+
+
+
+
+
+
+
 
 ### 1.2. Prepare Live ISO Media
 
@@ -42,7 +52,6 @@ Use a partitioning tool like GParted (available in the graphical ISO) or command
 -   `/dev/nvme0n1p2`: **Root (`/`) Partition**, remaining space, ext4 (or btrfs, etc.).
     
 -   `/dev/nvme0n1p3`: **SWAP Partition**, e.g., 16GB, linux-swap.
-    
 
 Once partitioned, format and mount the filesystems.
 
@@ -85,9 +94,7 @@ sudo nano /mnt/home/USER/flakes-git/flake.nix
 
 Modify the `let` block with your personal settings.
 
-Nix
-
-```
+```nix
 let
   # --- System Hostname ---
   hostname = "nixos"; # e.g. "my-laptop"
@@ -120,32 +127,31 @@ Copy the resulting hash string (it starts with `$6$`) and paste it into `flake.n
 Copy only the essential Nix files from your cloned git repository to your build directory.
 
 ```sh
-sudo rsync -av --exclude '.*' /mnt/home/USER/flakes-git/ /mnt/home/USER/flakes/
+sudo rsync -av --exclude '.*' --exclude 'README.md' /mnt/home/USER/flakes-git/ /mnt/home/USER/flakes/
 ```
 
 **Note on Directory Separation:** We create two distinct directories for a clear and deliberate reason:
 
--   `/mnt/home/USER/flakes-git/`: Contains the complete Git repository structure, including hidden management files.
+-   `/mnt/home/USER/flakes-git/`: Contains the complete Git repository structure, including hidden management files and documentation.
     
     ```
     /mnt/home/USER/flakes-git/
     ├── flake.nix
     ├── .git/
     ├── .gitignore
-    ├── .README.md
+    ├── README.md
     └── sub/
     ```
     
--   `/mnt/home/USER/flakes/`: Contains only the "pure" Nix files required for the build. The `rsync` command with `--exclude '.*'` filters out all dotfiles (`.git/`, `.gitignore`, `.README.md`), leaving only the essential configuration:
+-   `/mnt/home/USER/flakes/`: Contains only the "pure" Nix files required for the build. The `rsync` command with `--exclude '.*'` filters out all dotfiles (`.git/`, `.gitignore`) and `--exclude 'README.md'` filters out documentation files, leaving only the essential configuration:
     
     ```
     /mnt/home/USER/flakes/
     ├── flake.nix
     └── sub/
     ```
-    
 
-This separation prevents Nix from processing unintended files from your Git history and makes the build environment cleaner and more predictable.
+This separation prevents Nix from processing unintended files from your Git history and documentation, making the build environment cleaner and more predictable.
 
 ### 2.5. Generate Hardware Configuration
 
@@ -193,7 +199,7 @@ sudo chown -R $USER:users /home/$USER/flakes-git
 
 ### 3.2. The Daily Workflow
 
-**Your system is now managed entirely by the files in `~/flakes`.** 
+**Your system is now managed entirely by the files in `~/flakes`.**
 
 Here is the standard workflow for making changes.
 
@@ -216,9 +222,9 @@ sudo nix flake update && sudo nixos-rebuild switch --flake .
 
 If the build succeeds, the changes are applied immediately. If it fails, your system remains untouched.
 
-3. Persist Changes to GitHub
+3. Persist Changes to `flakes-git`
 
-Once you are happy with a successful change, sync it from your working directory (~/flakes) to your Git directory (~/flakes-git). This is done with a safe, targeted one-liner command.
+Once you are happy with a successful change, sync it from your working directory (`~/flakes`) to your Git directory (`~/flakes-git`). This is done with a safe, targeted one-liner command.
 
 ```sh
 # Sync changes with the safe, targeted one-liner command
@@ -248,13 +254,31 @@ This one-liner combines two `rsync` commands with `&&` to safely and accurately 
     -   **Why it's valid**: Since this targets a single file, the `--delete` option is not needed. By synchronizing the `sub` directory with the first command and `flake.nix` with this one, all configuration changes (additions, updates, and deletions) are fully and correctly reflected in the `flakes-git` directory.
         
 
-4. Commit and Push to Repository
+4. Commit and Push to GitHub Repository
 
 After safely synchronizing, commit the changes and push them to GitHub.
+
+Since your configuration contains a password hash, you need to be mindful of repository security:
+
+**Password Hash Security Management:**
+
+- **For Private Repositories**: If your GitHub repository is private, you can safely commit the password hash as-is. This allows seamless inheritance of your password during the next installation.
+
+- **For Public Repositories**: You must replace the password hash with a dummy string before committing. This is also an optional security practice even for private repositories.
+
+**Workflow Options:**
+
+- **Option A - Keep Password Hash (Private repos only)**: If you keep the actual password hash in your commits, it will be automatically inherited during future installations, eliminating the need to repeat the password hash generation process.
+
+- **Option B - Use Dummy Password Hash**: If you replace the password hash with a dummy string before committing, you'll need to repeat the password hash generation and configuration process during each new installation.
 
 ```sh
 # Commit and push to your repository
 cd ~/flakes-git
+
+# Optional: Replace password hash with dummy if using public repo
+# sed -i 's/passwordHash = ".*";/passwordHash = "DUMMY_HASH_REPLACE_DURING_INSTALL";/' flake.nix
+
 git add -A -v
 git commit -m "feat: updated system configuration" # Or any descriptive message
 git push
@@ -263,8 +287,6 @@ git push
 With this, the user information and all other settings you've configured are now permanently saved to your GitHub repository.
 
 **The next time you install NixOS, for example on different hardware, the installation process will now begin from this updated repository. This allows you to reproduce and inherit the exact, most recent state of your NixOS system.**
-
-
 
 ## Why Use `~/flakes`? (A Comparison with the Default `/etc/nixos`)
 
@@ -286,9 +308,7 @@ Start by installing an editor like VSCode and adding one of the excellent Nix la
 
 Once you are set up, open your configuration's entry point, `~/flakes/flake.nix`, in your IDE. You will see that your entire system is composed of a collection of `modules`, just like this:
 
-Nix
-
-```
+```nix
       modules = [
         # System state version
         {
@@ -307,7 +327,6 @@ Nix
         ./sub/system-packages.nix
         ./sub/system-settings.nix
       ];
-
 ```
 
 These modules are your system. Here is a guide to some of the key files:
@@ -349,6 +368,5 @@ These modules are your system. Here is a guide to some of the key files:
     -   **Input Method**: The system is configured for Japanese input using Fcit5 and Mozc.
         
     -   **Terminal**: The terminal application is **Ghostty**, which includes its own custom keybindings.
-        
 
 You should actively edit all of these files through your IDE. That is the one true way to make this system your own.
